@@ -439,7 +439,6 @@ class ServerArgs:
     speculative_ngram_match_type: Literal["BFS", "PROB"] = "BFS"
     speculative_ngram_branch_length: int = 18
     speculative_ngram_capacity: int = 10 * 1000 * 1000
-<<<<<<< HEAD
     # For suffix decoding only
     speculative_suffix_max_tree_depth: int = 24
     speculative_suffix_max_cached_requests: int = 10000
@@ -448,10 +447,7 @@ class ServerArgs:
 
     # For Multi-Layer MTP
     # FIXME: rename -> enable_multi_layer_mtp
-    enable_mtp: bool = False
-=======
     enable_multi_layer_eagle: bool = False
->>>>>>> main
 
     # Expert parallelism
     ep_size: int = 1
