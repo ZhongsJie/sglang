@@ -479,6 +479,7 @@ class Scheduler(
         )
 
         # Launch a draft worker for speculative decoding
+        # TODO zhongsjie
         draft_worker_kwargs = dict(
             server_args=self.server_args,
             gpu_id=self.gpu_id,
@@ -499,7 +500,7 @@ class Scheduler(
 
         # Draft workers are looked up via `SpeculativeAlgorithm` registry; new
         # algorithms should register their factory instead of patching this code.
-        if self.spec_algorithm.is_eagle():
+        if self.spec_algorithm.is_eagle() or self.spec_algorithm.is_suffix():
             draft_worker_kwargs["enable_overlap"] = self.enable_overlap
 
         # FIXME: refactor the draft worker registration logic
@@ -1818,6 +1819,7 @@ class Scheduler(
             # For prefill-only batch, we can avoid going through decoding step.
             if not self.last_batch.is_empty() and not self.last_batch.is_prefill_only:
                 if self.running_batch.is_empty():
+                    # TODO zhongsjie
                     self.running_batch = self.last_batch
                 else:
                     # Merge running_batch with prefill batch
@@ -2063,6 +2065,7 @@ class Scheduler(
             # TODO (lianmin): support return_logprob + mixed chunked prefill
             self.running_batch.filter_batch(v1_spec_info_filtered=True)
             if not self.running_batch.is_empty():
+                # TODO zhongsjie
                 self.running_batch.prepare_for_decode()
                 new_batch.mix_with_running(self.running_batch)
                 new_batch.decoding_reqs = self.running_batch.reqs
@@ -2189,6 +2192,7 @@ class Scheduler(
 
         # Run forward
         if self.is_generation:
+            # TODO zhongsjie 
             if self.spec_algorithm.is_none() or self.enable_overlap:
                 # In most cases, we use the model worker batch to run the forward.
                 worker_batch_or_batch = batch.get_model_worker_batch()
@@ -2207,12 +2211,15 @@ class Scheduler(
                 )
 
                 bs = len(model_worker_batch.seq_lens)
+                # TODO zhongsjie
                 future_indices = self.future_map.alloc_future_indices(bs)
 
                 with self.forward_stream_ctx:
                     self.forward_stream.wait_stream(self.default_stream)
+                    # TODO zhongsjie， 计算future信息
                     self.future_map.resolve_future(model_worker_batch)
                     with self.record_forward_metrics(batch):
+                        # TODO zhongsjie 会带上前一个的spec_info 执行 forward
                         batch_result = self.model_worker.forward_batch_generation(
                             model_worker_batch
                             # here pp is not compatible with overlap
@@ -2220,6 +2227,7 @@ class Scheduler(
                     # FIXME(lsyin): maybe move this to forward_batch_generation
                     batch_result.copy_done = self.device_module.Event()
                     if batch_result.delay_sample_func is None:
+                        # TODO zhongsjie
                         self.future_map.store_to_map(future_indices, batch_result)
                         batch_result.copy_to_cpu(return_logprob=batch.return_logprob)
                     else:
@@ -2229,10 +2237,12 @@ class Scheduler(
                 future_indices_or_next_token_ids = -future_indices.indices
 
                 if batch.is_spec_v2:
+                    # TODO zhongsjie 
                     # FIXME(lsyin): tmp code for spec v2
                     # We only keep future indices for next draft input
 
                     batch.spec_info = batch_result.next_draft_input
+                    # TODO zhongsjie 记录上一次的future_indices
                     batch.spec_info.future_indices = future_indices
 
                     # batch.spec_info = EagleDraftInput(
@@ -2242,6 +2252,7 @@ class Scheduler(
 
                     # The future value, usually for next batch preparation
                     # Current implementation strictly synchronizes the seq_lens
+                    # TODO zhongsjie 这里强制同步会有性能问题
                     batch.seq_lens = batch_result.next_draft_input.new_seq_lens
             elif self.enable_pdmux and batch.forward_mode.is_split_prefill():
                 batch_result = self.tp_worker.forward_batch_split_prefill(batch)

@@ -290,6 +290,12 @@ def _create_ngram_worker(**kwargs: Any) -> Any:
 
 
 def _create_suffix_worker(**kwargs: Any) -> Any:
+    enable_overlap = kwargs.pop("enable_overlap", False)
+    if enable_overlap:
+        from sglang.srt.speculative.suffix_worker_v2 import SuffixWorkerV2
+
+        return SuffixWorkerV2(**kwargs)
+    
     from sglang.srt.speculative.suffix_worker import SuffixWorker
 
     return SuffixWorker(**kwargs)

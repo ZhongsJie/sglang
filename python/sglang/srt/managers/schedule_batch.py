@@ -1851,15 +1851,16 @@ class ScheduleBatch(ScheduleBatchDisaggregationDecodeMixin):
     @property
     def is_spec_v2(self):
         # FIXME: finally deprecate is_spec_v2
-        return self.enable_overlap and self.spec_algorithm.is_eagle()
+        return self.enable_overlap and not self.spec_algorithm.is_none()
 
     def prepare_for_decode(self):
         self.forward_mode = ForwardMode.DECODE
         bs = len(self.reqs)
 
         if self.is_spec_v2:
+            # TODO zhongsjie
             # TODO(spec-v2): all spec v2 should go through this path
-            draft_input: EagleDraftInput = self.spec_info
+            draft_input = self.spec_info
             draft_input.prepare_for_decode(self)
 
         if not self.spec_algorithm.is_none():
@@ -1938,8 +1939,9 @@ class ScheduleBatch(ScheduleBatchDisaggregationDecodeMixin):
 
     def maybe_wait_verify_done(self):
         if self.is_spec_v2:
-            draft_input: EagleDraftInput = self.spec_info
-            if draft_input.verify_done is not None:
+            # TODO zhongsjie
+            draft_input = self.spec_info
+            if draft_input is not None and draft_input.verify_done is not None:
                 draft_input.verify_done.synchronize()
 
     def filter_batch(
@@ -2016,6 +2018,7 @@ class ScheduleBatch(ScheduleBatchDisaggregationDecodeMixin):
         has_been_filtered = v1_spec_info_filtered and not self.is_spec_v2
 
         if self.spec_info:
+            # TODO zhongsjie
             self.spec_info.filter_batch(
                 new_indices=keep_indices_device,
                 has_been_filtered=has_been_filtered,
@@ -2067,6 +2070,7 @@ class ScheduleBatch(ScheduleBatchDisaggregationDecodeMixin):
         self.return_hidden_states |= other.return_hidden_states
 
         if self.spec_info:
+            # TODO zhongsjie
             self.spec_info.merge_batch(other.spec_info)
 
     def get_model_worker_batch(
@@ -2121,6 +2125,7 @@ class ScheduleBatch(ScheduleBatchDisaggregationDecodeMixin):
             input_embeds=self.input_embeds,
             token_type_ids=self.token_type_ids,
             spec_algorithm=self.spec_algorithm,
+            # TODO zhongsjie
             spec_info=self.spec_info,
             hicache_consumer_index=self.hicache_consumer_index,
             capture_hidden_mode=(

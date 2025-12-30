@@ -315,7 +315,8 @@ class EagleDraftWorker(BaseDraftWorker):
             retrive_next_sibling,
             draft_tokens,
         ) = build_tree_kernel_efficient(
-            draft_input.verified_id,
+            # TODO zhongsjie 关键：verified_id 是已经验证通过的Token，需要根据 seq_lens 截取对应的部分, 上一次的结果
+            draft_input.verified_id, 
             parent_list,
             top_scores_index,
             draft_tokens,
@@ -732,10 +733,12 @@ class EAGLEWorkerV2(BaseSpecWorker):
             accept_length,
             accept_index,
         ) = verify_input.sample(batch, logits_output, vocab_mask)
+        # TODO zhongsjie 这个值在当前的实现下，后续会同步获取
         new_seq_lens = batch.seq_lens + accept_length
         verify_done = torch.get_device_module(self.device).Event()
         verify_done.record()
 
+        # 填充被接受的Token，用于下一次draft生成的输入
         if not batch.forward_mode.is_idle():
             all_verified_id = predict[accept_index]
             verified_id = torch.empty_like(accept_length, dtype=torch.int32)
